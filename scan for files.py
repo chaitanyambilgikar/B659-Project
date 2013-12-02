@@ -2,9 +2,11 @@
 Project for B-659.
 Author: Chaitanya Bilgikar (cbilgika@indiana.edu)
 '''
-
+from __future__ import division
+from sklearn import svm
 import os.path
 import numpy
+
 import re
 
 '''
@@ -21,20 +23,42 @@ the first tab. (these are the names of the ingredients. Some of them may have ad
 	Not sure what to do about them yet.)
 '''
 def getFileDetails(_filename,_fileDescriptor):
-	ranking = _filename[0]
+	rankingRegexMatch = re.match('([0-9](?:\_)[0-9]?)', _filename)
+	
+	if len(rankingRegexMatch.group(0)) == 2:
+		ranking = float(rankingRegexMatch.group(0)[0])
+	else:
+		ranking = float(rankingRegexMatch.group(0)[0]+'.'+rankingRegexMatch.group(0)[2])
+	
+	_keywords = []
 	for line in _fileDescriptor:
-		#print st.tag(line.split())
-		print re.match('(\w\s\w+)(\s+.*)', line)
+		m = re.match('(\w+\s*\w*)(?=\t[0-9])', line)
+		if m:
+			_keywords.append(m.group(0))
+
+	return [_keywords,ranking]
 
 '''
 Open each file in the directory and pass the name and file descriptor to getFileDetails
 '''
 def this_is_it(files):
+	_allKeywords = []
+	_allRankings = []
 	for eachFile in files:
 		fullFilePath = mainDirectory + '/' + eachFile
 		f = open(fullFilePath)
-		getFileDetails(eachFile,f)
+		XandYForThisFile = getFileDetails(eachFile,f)
+		_allKeywords.append(XandYForThisFile[0])
+		_allRankings.append(XandYForThisFile[1])
+	_allKeywords = numpy.asarray(_allKeywords,dtype=object)
+	_allRankings = numpy.asarray(_allRankings)
+	svm_learning(_allKeywords,_allRankings)
 
+
+
+def svm_learning(x,y):
+	clf = svm.SVC()
+	clf.fit(x,y)
 '''
 This just prints the directory path and then calls the callback x on files
 '''
@@ -45,6 +69,3 @@ def print_files( x, dir_path , files ):
 code starts here
 '''
 os.path.walk(mainDirectory, print_files, this_is_it)
-
-
-
