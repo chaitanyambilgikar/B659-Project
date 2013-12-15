@@ -1,16 +1,20 @@
 from __future__ import division
+from collections import defaultdict
 from sklearn import svm
 import os.path
-import numpy
-import nltk
-import re
-mainDirectory = './nyu/PROJECTS/Epicurious/DATA/ingredients'
-instr_directory = './nyu_instr/PROJECTS/Epicurious/DATA/instructions'
 
+#import numpy
+import nltk
+#import re
+
+mainDirectory = './nyu/PROJECTS/Epicurious/DATA/ingredients'
+#instr_directory = './nyu_instr/PROJECTS/Epicurious/DATA/instructions'
+instr_directory = './selectedInput'
 '''
 This is where we would reach each line of the file and then run a regex match on it to get all the words before
 the first tab. (these are the names of the ingredients. Some of them may have adjectives like fresh, peeled,cut etc.
 	Not sure what to do about them yet.)
+'''
 '''
 _featureSet=[]
 def getFileDetails(_filename,_fileDescriptor):
@@ -105,9 +109,8 @@ def getFileDetails(_filename,_fileDescriptor):
 
 	return [_features,ranking]
 
-'''
 Open each file in the directory and pass the name and file descriptor to getFileDetails
-'''
+
 def this_is_it(files):
     _allKeywords = []
     _allRankings = []
@@ -154,9 +157,9 @@ def this_is_it(files):
     	#_allRankings = numpy.asarray(_allRankings)
 	#svm_learning(_allKeywords,_allRankings)
 	#return _allKeywords, _allRankings
+'''
 
-
-def read_instructions_from_file(_filename,_fileDescriptor):
+def read_instructions_from_file(_filename,_fileDescriptor,_featureSet):
 	stemmer = nltk.stem.porter.PorterStemmer()
 	for line in _fileDescriptor:
 		if(line):
@@ -164,14 +167,19 @@ def read_instructions_from_file(_filename,_fileDescriptor):
 			tag_array = nltk.pos_tag(tokens)
 			for (word,tag) in tag_array:
 				if(tag == 'VBN' or tag == 'VBG' or tag == 'VB'):
-					print word,tag,stemmer.stem(word)
+					stemmedWord = stemmer.stem(word)
+					_featureSet[stemmedWord] += 1
+	return _featureSet
+
 		
 
 def for_instructions(files):
+	_instrFeatureSet = defaultdict(int)
 	for eachFile in files:
 		fullFilePath = instr_directory + '/' + eachFile
 		f = open(fullFilePath)
-		read_instructions_from_file(eachFile,f)
+		_instrFeatureSet = read_instructions_from_file(eachFile,f,_instrFeatureSet)
+	print _instrFeatureSet
 
 def svm_learning(x,y):
 	clf = svm.SVC()
